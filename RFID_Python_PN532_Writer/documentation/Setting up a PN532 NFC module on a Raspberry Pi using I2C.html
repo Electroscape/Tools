@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<!-- saved from url=(0097)https://blog.stigok.com/2017/10/12/setting-up-a-pn532-nfc-module-on-a-raspberry-pi-using-i2c.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Setting up a PN532 NFC module on a Raspberry Pi using I2C</title>
+  <meta name="description" content="">
+  <meta property="og:description" content="">
+  <link rel="stylesheet" href="./Setting up a PN532 NFC module on a Raspberry Pi using I2C_files/main.css">
+  <link rel="canonical" href="https://blog.stigok.com/2017/10/12/setting-up-a-pn532-nfc-module-on-a-raspberry-pi-using-i2c.html">
+  <link rel="alternate" type="application/rss+xml" title="blog of stigok" href="https://blog.stigok.com/feed.xml">
+  <link type="application/json" rel="alternate" href="https://blog.stigok.com/feed.json" title="blog of stigok">
+</head>
+<body>
+<div id="header">
+  <h1><a href="https://blog.stigok.com/">blog of stigok</a></h1>
+</div>
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BlogPosting",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://blog.stigok.com/2017/10/12/setting-up-a-pn532-nfc-module-on-a-raspberry-pi-using-i2c.html"
+    },
+    "headline": "Setting up a PN532 NFC module on a Raspberry Pi using I2C",
+    "datePublished": "2017-10-12 17:56:43 +0200",
+    "dateModified": "2019-02-28 22:19:32 +0100",
+    "wordCount:" "633",
+    "keywords": "raspberrypi, nfc, rfid, i2c",
+    "image": "https://stigok.com/img/stigok.png",
+    "author": {
+      "@type": "Person",
+      "name": "Stig Otnes Kolstad",
+      "image": "https://stigok.com/img/stigok.png",
+      "memberOf": "stigok"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "stigok",
+      "url": "https://stigok.com/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://stigok.com/img/stigok.png"
+      },
+      "contactPoint": {
+        "@type" : "ContactPoint",
+        "contactType": "customer service",
+        "name": "Send message",
+        "url": "https://stigok.com/#contact"
+      }
+    }
+  }
+</script>
+
+<article class="container-fluid">
+  <h1>Setting up a PN532 NFC module on a Raspberry Pi using I2C</h1>
+  
+  <p>
+    <small>
+      
+        <span class="badge">raspberrypi</span>
+      
+        <span class="badge">nfc</span>
+      
+        <span class="badge">rfid</span>
+      
+        <span class="badge">i2c</span>
+      
+    </small>
+  </p>
+  
+  
+  <section id="revisions">
+    Revision history
+    <ul id="revisionList">
+      
+        <li>
+          
+            
+            <strong title="2017-10-12 17:56:43 +0200">12 Oct 2017:</strong>
+            Post was created
+          
+          (<a href="https://github.com/stigok/blog.stigok.com/commit/973f978" rel="nofollow">diff</a>)
+        </li>
+      
+    </ul>
+  </section>
+  <p><img src="./Setting up a PN532 NFC module on a Raspberry Pi using I2C_files/1507824522111557533.jpg" alt="PN532"></p>
+
+<h2 id="parts">Parts</h2>
+
+<ul>
+  <li>1 x Raspberry Pi 3 Model B</li>
+  <li>1 x <a href="https://www.m.nu/rfid-nfc/pn532-nfc-rfid-module-v3">PN532 NFC/RFID module</a></li>
+</ul>
+
+<h2 id="preparing-the-pi">Preparing the Pi</h2>
+
+<ul>
+  <li>Download a fresh version of <a href="https://www.raspberrypi.org/downloads/raspbian/">raspbian</a></li>
+  <li>Enable I2C interface on the Pi <code class="highlighter-rouge">raspi config</code></li>
+  <li>Enable SSH server <code class="highlighter-rouge">echo 'This enables SSH on boot' | sudo tee /boot/ssh</code></li>
+  <li>Install I2C utility binaries <code class="highlighter-rouge">sudo apt install i2c-tools</code></li>
+  <li>Configure the NFC module to use I2C by physically flipping a SMB header on the PCB</li>
+</ul>
+
+<h3 id="wire-up-the-pn532">Wire up the PN532</h3>
+
+<p><strong>Turn off the power to the Pi while you are wiring</strong></p>
+
+<ul>
+  <li><a href="https://pinout.xyz/pinout/i2c">Raspberry Pi GPIO I2C map</a></li>
+</ul>
+
+<p>This NFC module has multiple interfaces to connect with. For I2C I’m physically connecting the GPIO pins to the 4-pin interface on the NFC module PCB.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># NFC module pin -&gt; Pi GPIO physical pin #
+GND -&gt; 6
+VCC -&gt; 4
+SDA -&gt; 3
+SCL -&gt; 5
+</code></pre></div></div>
+
+<p>Probe for I2C devices:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>root@raspberrypi:~# i2cdetect -y 1
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- -- -- -- -- -- -- -- -- -- -- 
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+20: -- -- -- -- 24 -- -- -- -- -- -- -- -- -- -- -- 
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- 
+70: -- -- -- -- -- -- -- --
+</code></pre></div></div>
+
+<p>In the above results, a device exists at address <code class="highlighter-rouge">0x24</code> which is the NFC module.</p>
+
+<p><img src="./Setting up a PN532 NFC module on a Raspberry Pi using I2C_files/1507896705867113013.jpg" alt="Raspberry Pi 3 with PN532 connected over I2C"></p>
+
+<h3 id="libnfc">libnfc</h3>
+
+<p>Install NFC tools:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo apt install libnfc5 libnfc-bin libnfc-examples
+</code></pre></div></div>
+
+<p>I had a problem detecting the I2C device with <code class="highlighter-rouge">nfc-list -v</code> and <code class="highlighter-rouge">nfc-scan-device -v</code> and it was due to libnfc not scanning for I2C devices out of the box.</p>
+
+<p>Let libnfc know the device address of the reader in <code class="highlighter-rouge">/etc/nfc/libnfc.conf</code>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>device.name = "PN532 over I2C"
+device.connstring = "pn532_i2c:/dev/i2c-1"
+</code></pre></div></div>
+
+<p>List connected NFC readers:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pi@raspberrypi:~ $ nfc-scan-device -v
+nfc-scan-device uses libnfc 1.7.1
+1 NFC device(s) found:
+- pn532_i2c:/dev/i2c-1:
+    pn532_i2c:/dev/i2c-1
+chip: PN532 v1.6
+initator mode modulations: ISO/IEC 14443A (106 kbps), FeliCa (424 kbps, 212 kbps), ISO/IEC 14443-4B (106 kbps), Innovision Jewel (106 kbps), D.E.P. (424 kbps, 212 kbps, 106 kbps)
+target mode modulations: ISO/IEC 14443A (106 kbps), FeliCa (424 kbps, 212 kbps), D.E.P. (424 kbps, 212 kbps, 106 kbps)
+</code></pre></div></div>
+
+<p>Read a card or tag by first starting <code class="highlighter-rouge">nfc-poll</code> then physically holding a NFC/RFID tag or card in front of the reader:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pi@raspberrypi:~ $ nfc-poll 
+nfc-poll uses libnfc 1.7.1
+NFC reader: pn532_i2c:/dev/i2c-1 opened
+NFC device will poll during 30000 ms (20 pollings of 300 ms for 5 modulations)
+ISO/IEC 14443A (106 kbps) target:
+    ATQA (SENS_RES): 00  04  
+       UID (NFCID1): 65  f7  0a  ab  
+      SAK (SEL_RES): 08  
+nfc_initiator_target_is_present: Target Released
+Waiting for card removing...done.
+</code></pre></div></div>
+
+<p>Now I am free to use the device using <code class="highlighter-rouge">libnfc</code>.</p>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3 id="i2cdetect-cant-find-the-nfc-device">i2cdetect can’t find the NFC device</h3>
+
+<p>Make sure the wiring is correct. Maybe SDA and SCL have been switched. Check the <a href="https://pinout.xyz/pinout/i2c">Pi wiring diagram</a>.</p>
+
+<h3 id="libnfc-cant-find-the-nfc-device">libnfc can’t find the NFC device</h3>
+
+<p>If it is already appearing in <code class="highlighter-rouge">i2cdetect</code>, make sure you have properly set the I2C address in <code class="highlighter-rouge">libnfc.conf</code></p>
+
+<h2 id="references">References</h2>
+<ul>
+  <li>http://www.byteparadigm.com/applications/introduction-to-i2c-and-spi-protocols/</li>
+  <li>https://pinout.xyz/pinout/i2c</li>
+  <li>https://learn.sparkfun.com/tutorials/raspberry-pi-spi-and-i2c-tutorial</li>
+  <li>https://www.element14.com/community/community/raspberry-pi/blog/2012/12/14/nfc-on-raspberrypi-with-pn532-py532lib-and-i2c</li>
+  <li>https://www.scribd.com/document/374277518/PN532-Manual-V3-pdf</li>
+</ul>
+
+
+</article>
+
+<section id="comments" class="container-fluid">
+  If you have any comments or feedback, please send me an e-mail. (stig at stigok dotcom)
+</section>
+<!--
+
+<section id="comments" class="container-fluid">
+  <h2>Comments</h2>
+  
+  
+  <p>No comments yet...</p>
+  
+
+  <h3>Add comment</h3>
+  <form action="/comments/3e86c919a70092b91d2f9f44c4aee6336397b509dc0442f9023d98c87b8f469b?return_url=/2017/10/12/setting-up-a-pn532-nfc-module-on-a-raspberry-pi-using-i2c.html" method="post" enctype="application/x-www-form-urlencoded">
+    <div>
+      <label for="comment_author">Name</label>
+      <input type="text" id="comment_author" name="author" minlength="1" maxlength="100">
+    </div>
+    <div>
+      <label for="comment_contact">Contact (optional, but will be published, so use [dot] and [at] and in-betweens)</label>
+      <input type="text" id="comment_contact" name="contact" minlength="1" maxlength="300">
+    </div>
+    <div>
+      <label for="comment_body">Comment body</label>
+      <textarea id="comment_body" name="body" rows="8" minlength="3" maxlength="9000"></textarea>
+    </div>
+    <button type="submit" name="submit" value="valid">Submit comment</button>
+  </form>
+</section>
+-->
+
+<section id="related" class="container-fluid">
+  <h3>Posts sharing categories with this post</h3>
+  
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+      
+      
+        <h4>raspberrypi</h4>
+        <ul>
+        
+          <li><a href="https://blog.stigok.com/2019/09/03/prepare-headless-pi-3-arch-linux-arm-wifi.html">Prepare a headless Raspberry Pi 3 with Arch Linux ARM to connect to WiFi</a></li>
+        
+          <li><a href="https://blog.stigok.com/2019/03/26/raspberry-pi-wifi-ap-wireguard-port-53.html">Use Raspberry Pi as WiFi AP and route traffic through Wireguard (port 53)</a></li>
+        
+          <li><a href="https://blog.stigok.com/2018/09/17/pi-pulseaudio-network-stream-audio-linux.html">Stream audio over network with PulseAudio running on Raspberry Pi</a></li>
+        
+          <li><a href="https://blog.stigok.com/2018/06/01/build-arduino-sketches-from-command-line.html">Build Arduino sketches from command-line and flash to ESP8266 from Pi</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/12/27/clone-corrupted-sdcard-and-ignore-read-errors.html">Clone corrupted SD-card and ignore read errors</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/11/30/adding-an-ethernet-port-to-a-raspberry-pi-zero.html">Adding an ethernet port to a Raspberry Pi Zero</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/10/24/increase-5v-rail-amp-output-on-raspberry-pi-3zero.html">Increase 5v rail amp output on Raspberry Pi 3/Zero</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/10/14/raspberry-pi-3-ffmpeg-with-audio-input-audioinjector-stereo-hat.html">Raspberry Pi 3 ffmpeg with audio input audioinjector stereo hat</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/10/12/enable-ssh-server-sshd-on-raspbian.html">Enable SSH server sshd on raspbian</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/07/30/pipe-video-stream-from-raspberry-pi-to-local-computer-with-ffplay.html">Pipe video stream from raspberry pi to local computer with ffplay</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/07/12/mounting-filesystem-in-ram-with-tmpfs.html">Mounting filesystem in ram with tmpfs</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/06/05/setting-up-wireless-network-on-a-raspberry-pi-3-with-arch-linux-arm-armv7h.html">Setting up wireless network on a Raspberry Pi 3 with Arch Linux Arm armv7h</a></li>
+        
+          <li><a href="https://blog.stigok.com/2017/06/01/flashing-sd-card-with-arch-linux-arm-for-raspberry-pi-2-and-3.html">Flashing SD card with Arch Linux ARM for Raspberry Pi 2 and 3</a></li>
+        
+        </ul>
+      
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+      
+      
+        <h4>nfc</h4>
+        <ul>
+        
+          <li><a href="https://blog.stigok.com/2019/08/06/golang-with-libnfc-bindings-and-a-acr122u-a9-tag-reader.html">Using libnfc bindings in Golang with an ACR122U-A9 tag reader</a></li>
+        
+        </ul>
+      
+    
+  
+    
+      
+      
+    
+  
+    
+      
+      
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+    
+  
+</section>
+
+
+<footer class="container-fluid">
+  <a href="https://blog.stigok.com/">Back to home</a>
+</footer>
+
+
+
+</body></html>
