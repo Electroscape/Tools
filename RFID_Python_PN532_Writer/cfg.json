@@ -1,7 +1,7 @@
 {
     "rooms": {
 
-        "sr": {
+        "SR": {
             "protocol": 0,
             "blockaddress": 8,
             "items": {
@@ -15,7 +15,7 @@
             }
         },
 
-        "gal_hh": {
+        "GL": {
             "protocol": 0,
             "blockaddress": 1,
             "items": {
@@ -23,6 +23,22 @@
                 "AH": "AH",
                 "GF": "GF",
                 "PA": "PA"
+            }
+        },
+
+        "HF": {
+            "protocol": 0,
+            "blockaddress": 1,
+            "items": {
+                "VR": "VR"
+            }
+        },
+
+        "New_SR": {
+            "protocol": 0,
+            "blockaddress": 1,
+            "items": {
+                "ZK": "ZK"
             }
         }
 
