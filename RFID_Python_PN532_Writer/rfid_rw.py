@@ -52,23 +52,29 @@ protocols
 1 is currently deprecated, all rooms shall stick to one setup
 '''
 
+
 def authenticate(uid, protocol, read_block, auth_mode):
     rc = 0
     if protocol == 0:
         key = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
-        rc = pn532.mifare_classic_authenticate_block(uid, read_block, auth_mode, key)
+        rc = pn532.mifare_classic_authenticate_block(
+            uid, read_block, auth_mode, key)
         print(rc)
     return rc
 
 
-def write_with_check(write_to_block, write_data, protocol, uid):
-    if protocol == 0:
+def write_with_check(write_to_block, write_data, protocol, uid, tag_type='classic'):
+    if tag_type == "ntag":
+        write_data = write_data[:4]
+        rc = pn532.ntag2xx_write_block(write_to_block, write_data)
+    elif protocol == 0:
         auth = authenticate(uid, protocol, write_to_block, MIFARE_CMD_AUTH_B)
         sleep(0.5)
         if not auth:
             print('authentication failed, aborting process')
             return 0
         rc = pn532.mifare_classic_write_block(write_to_block, write_data)
+
     if not rc:
         print('writing failed... exiting')
         return False
@@ -77,8 +83,8 @@ def write_with_check(write_to_block, write_data, protocol, uid):
 
     return True
 
-def read_card_block(uid, protocol, read_block=1):
 
+def read_card_block(uid, protocol, read_block=1, tag_type='classic'):
     rc = 0
     if protocol == 0:
         auth = authenticate(uid, protocol, read_block, MIFARE_CMD_AUTH_A)
@@ -87,13 +93,15 @@ def read_card_block(uid, protocol, read_block=1):
             return 0
 
     print('Content of block ' + str(read_block))
-    if protocol == 0:
+    if tag_type == "ntag":
+        rc = pn532.ntag2xx_read_block(read_block)
+    elif protocol == 0:
         rc = pn532.mifare_classic_read_block(read_block)
 
     if rc is not None:
         text = "".join(chr(x) for x in rc)
         print(text)
-            # [hex(x) for x in pn532.ntag2xx_read_block(read_block)])
+        # [hex(x) for x in pn532.ntag2xx_read_block(read_block)])
     return rc
 
 
@@ -108,6 +116,7 @@ def wait_for_card():
         print('Found card with UID:', [hex(i) for i in uid])
         return uid
 
+
 def convert_data(data):
     data = data + " "
     data_byte = data.encode('utf-8')
@@ -118,6 +127,7 @@ def convert_data(data):
 def write_preset_item(room):
     protocol = room['protocol']
     block_address = room['blockaddress']
+    tag_type = room.get("tag", 'classic')
 
     items = room['items']
 
@@ -147,15 +157,12 @@ def write_preset_item(room):
 
     print('datalength is: ' + str(len(data)))
     # since a string terminates with a 0 set it so...
-    if data[15] is not 0:
+    if data[15] != 0:
         data[15] = 0
-
-
 
     print(data)
     uid = wait_for_card()
-
-    write_with_check(block_address, data, protocol, uid)
+    write_with_check(block_address, data, protocol, uid, tag_type=tag_type)
 
     return 1
 
@@ -165,10 +172,13 @@ def select_room():
     for room in rooms:
         print(room)
 
-    room = input("\ntype the room name\n")
-    print(room + ' has been selected as room\n')
-    room = rooms[room]
-    return room
+    selected_room = input("\ntype the room name\n")
+    while not rooms.get(selected_room):
+        print('Invalid Room Name')
+        selected_room = input("\ntype the room name\n")
+
+    print(selected_room + ' has been selected as room\n')
+    return rooms[selected_room]
 
 
 def handle_read(room, duplicate=False):
@@ -179,6 +189,7 @@ def handle_read(room, duplicate=False):
         print('invalid selection')
         return False
 
+    tag_type = room.get("tag", 'classic')
     print("waiting to read")
     uid = wait_for_card()
     if duplicate:
@@ -189,9 +200,10 @@ def handle_read(room, duplicate=False):
 
     blocks_read = []
     for block_address in block_addresses:
-        rc = read_card_block(uid, protocol, block_address)
+        rc = read_card_block(uid, protocol, block_address, tag_type=tag_type)
         if not rc:
-            print('could not read given block, possibly out of range for ' + str(block_address))
+            print(
+                'could not read given block, possibly out of range for ' + str(block_address))
             break
         # since they provice RC and content in one variable ...
         blocks_read.append((block_address, rc))
@@ -199,15 +211,14 @@ def handle_read(room, duplicate=False):
     return blocks_read, uid
 
 
-
 def main():
 
     room = select_room()
 
-    while True:
+    while room:
 
         # modes would be read, write, duplicate, compare
-        print("\n\n1: read \n2: write\n3: duplicate\n4: compare\n9: change room")
+        print("\n\n1: read \n2: write\n3: duplicate\n4: compare\n9: change room\nx: Exit")
         mode = input("enter a number of what to do\n\n")
 
         valid_selection = False
@@ -224,8 +235,14 @@ def main():
             handle_read(room)
 
         if mode == '3':
+            tag_type = room.get("tag", 'classic')
+            if tag_type == "ntag":
+                print("Duplication is not supported for ntags")
+                continue
+
             valid_selection = True
-            print('Duplication mode: Place the RFID that should be Duplicated on the reader')
+            print(
+                'Duplication mode: Place the RFID that should be Duplicated on the reader')
             blocks_read, uid_old = handle_read(room, True)
 
             if not blocks_read:
@@ -253,18 +270,23 @@ def main():
                     print('duplication failed!')
                     return 0
 
+        if mode == '4':
+            valid_selection = True
+            print("Compare is not avaiable yet!")
 
         if mode == '9':
             valid_selection = True
             room = select_room()
 
+        if mode.lower() == 'x':
+            return 0
+
         if not valid_selection:
             print('invalid selection')
 
 
-
-
-main()
+if __name__ == "__main__":
+    main()
 
 
 '''
@@ -274,6 +296,3 @@ data = bytearray(b'asdf')
 read_card()  
 exit()
 '''
-
-
-

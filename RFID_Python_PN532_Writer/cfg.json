@@ -1,6 +1,5 @@
 {
     "rooms": {
-
         "SR": {
             "protocol": 0,
             "blockaddress": 8,
@@ -14,7 +13,6 @@
                 "Kugelschreiber": [107, 97, 115, 112, 98, 101, 114, 114, 121, 45, 116, 117, 116, 111, 114, 0]
             }
         },
-
         "GL": {
             "protocol": 0,
             "blockaddress": 1,
@@ -25,7 +23,6 @@
                 "PA": "PA"
             }
         },
-
         "HF": {
             "protocol": 0,
             "blockaddress": 1,
@@ -33,14 +30,17 @@
                 "VR": "VR"
             }
         },
-
-        "New_SR": {
-            "protocol": 0,
-            "blockaddress": 1,
+        "SR_NTAG": {
+            "protocol": 4,
+            "blockaddress": 4,
+            "tag": "ntag",
             "items": {
-                "ZK": "ZK"
+                "DT": "DT",
+                "TB": "TB",
+                "ZK": "ZK",
+                "SB": "SB",
+                "VM": "VM"
             }
         }
-
     }
 }
