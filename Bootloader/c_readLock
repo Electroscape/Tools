@@ -1,0 +1,3 @@
+# reading the lock byte: 
+sudo /opt/avrdude/bin/avrdude -p atmega328p -c linuxgpio -vv -U lock:r:lock_byte.bin:r
+hexdump -C lock_byte.bin

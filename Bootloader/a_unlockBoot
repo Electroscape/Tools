@@ -1,0 +1,3 @@
+# unlock the boot sector 
+sudo /opt/avrdude/bin/avrdude -p atmega328p -c linuxgpio -U lock:w:0x3f:m 
+
