@@ -15,8 +15,8 @@ else
 fi
 
 cd ~
-mkdir Electroscape
-cd Electroscape
+mkdir TE
+cd TE
 
 CNTX={users}; NAME={Electroscape}; PAGE=1
 curl "https://api.github.com/$CNTX/$NAME/repos?page=$PAGE&per_page=100" |
@@ -24,7 +24,7 @@ curl "https://api.github.com/$CNTX/$NAME/repos?page=$PAGE&per_page=100" |
   cut -d \" -f 4 |
   xargs -L1 git clone
 
-for f in ~/Electroscape/*
+for f in ~/TE/*
 do
     echo "Processing $f"
     cd $f
