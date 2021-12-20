@@ -17,10 +17,13 @@
             "protocol": 0,
             "blockaddress": 4,
             "items": {
-                "DT": "DT",
-                "TB": "TB",
+                "BE": "BE",
                 "ZK": "ZK",
                 "SB": "SB",
+                "TB": "TB",
+                "DT": "DT",
+                "RF": "RF",
+                "KU": "KU",
                 "VM": "VM"
             }
         },
@@ -46,11 +49,12 @@
             "blockaddress": 4,
             "tag": "ntag",
             "items": {
-                "DT": "DT",
-                "TB": "TB",
-                "ZK": "ZK",
-                "SB": "SB",
-                "VM": "VM"
+                "DT": "PDT",
+                "TB": "PTB",
+                "ZK": "PZK",
+                "SB": "PSB",
+                "VM": "PVM",
+                "SV": "PSV"
             }
         }
     }

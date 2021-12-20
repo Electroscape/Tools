@@ -2,7 +2,6 @@
 
 import board
 import busio
-import binascii
 from digitalio import DigitalInOut
 from time import sleep
 import json
