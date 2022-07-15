@@ -1,0 +1,3 @@
+# write boot loader and lock the boot sector against accidental writes (in the lock byte) 
+avrdude -p atmega328p -c linuxgpio -u -U flash:w:optiboot_atmega328.hex -U lock:w:0x0F:m 
+
