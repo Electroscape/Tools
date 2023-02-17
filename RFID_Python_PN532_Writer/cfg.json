@@ -44,6 +44,18 @@
                 "VR": "VR"
             }
         },
+        "POD": {
+            "protocol": 4,
+            "blockaddress": 4,
+            "tag": "ntag",
+            "items": {
+                "1": "1",
+                "2": "2",
+                "3": "3",
+                "4": "4",
+                "5": "5"
+            }
+        },
         "SR_NTAG": {
             "protocol": 4,
             "blockaddress": 4,
