@@ -27,6 +27,19 @@
                 "VM": "VM"
             }
         },
+        "SR_FingerST": {
+            "protocol": 0,
+            "blockaddress": 4,
+            "items": {
+                "a": "PI",
+                "b": "PS",
+                "c": "PF",
+                "d": "IS",
+                "e": "ES",
+                "f": "PD",
+                "g": "DO"
+            }
+        },
         "GL": {
             "protocol": 0,
             "blockaddress": 1,
