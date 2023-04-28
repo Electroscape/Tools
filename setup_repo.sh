@@ -29,5 +29,5 @@ do
     echo "Processing $f"
     cd $f
     repo=`basename "$f"`
-    git remote set-url origin git@github.com:Electroscape/$repo.git
+    git remote set-url origin https://github.com/Electroscape/$repo.git
 done
