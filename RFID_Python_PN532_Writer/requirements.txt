@@ -1,2 +1,4 @@
 adafruit-blinka
 adafruit-circuitpython-pn532
+ttkbootstrap
+json
