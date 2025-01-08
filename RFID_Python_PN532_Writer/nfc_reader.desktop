@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Name=NFC Reader
+Comment=Launch the NFC Reader GUI
+Exec=/home/2cp/Electroscape/Tools/RFID_Python_PN532_Writer/run.sh
+Icon=/home/2cp/Electroscape/Tools/RFID_Python_PN532_Writer/icon.png
+Terminal=false
+Type=Application
+Categories=Utility;
