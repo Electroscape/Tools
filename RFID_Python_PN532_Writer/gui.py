@@ -21,17 +21,20 @@ def read_nfc():
 
 def write_nfc():
     content = write_text.get()
-    print(f"Writing to NFC: {content}")  # Replace with actual NFC write function
+    protocol = protocol_var.get()
+    print(f"Writing to NFC: {content} with protocol {protocol}")  # Replace with actual NFC write function
 
-def duplicate_nfc():
-    print("Duplicating NFC...")  # Replace with actual NFC duplicate function
+def init_nfc():
+    print("Init NFC...")  # Replace with actual NFC init function
 
 def clear_write_area():
     write_text.delete(0, tk.END)
+    protocol_var.set(9)  # Reset to Auto
 
-def item_button_click(content):
+def item_button_click(content, protocol):
     write_text.delete(0, tk.END)
     write_text.insert(0, content)
+    protocol_var.set(protocol)
 
 def on_mousewheel(event):
     canvas.yview_scroll(-1 * int(event.delta / 120), "units")
@@ -42,7 +45,7 @@ config_data = load_config()
 # Initialize main application
 app = tb.Window(themename="darkly")
 app.title("NFC GUI")
-app.geometry("650x650")
+app.geometry("700x700")
 app.resizable(False, False)
 
 # Read Area
@@ -51,7 +54,7 @@ read_frame.pack(fill="x", padx=10, pady=5)
 read_area = tk.Text(read_frame, height=5, wrap="word", state="disabled")
 read_area.pack(fill="x", padx=5, pady=5)
 
-# Write Text Area with Clear Button
+# Write Text Area with Clear Button and Protocol Selection
 write_frame = ttk.LabelFrame(app, text="Write Text", padding=10)
 write_frame.pack(fill="x", padx=10, pady=5)
 write_text_frame = ttk.Frame(write_frame)
@@ -63,13 +66,23 @@ write_text.pack(side="left", fill="x", expand=True, padx=(0, 5))
 clear_button = ttk.Button(write_text_frame, text="Clear", style="warning.TButton", command=clear_write_area)
 clear_button.pack(side="left")
 
+# Protocol Radio Buttons
+protocol_var = tk.IntVar(value=9)  # Default to Auto
+protocol_frame = ttk.Frame(write_frame)
+protocol_frame.pack(fill="x", padx=5, pady=5)
+
+ttk.Radiobutton(protocol_frame, text="Classic", value=0, variable=protocol_var).pack(side="left", padx=5)
+ttk.Radiobutton(protocol_frame, text="NTAG", value=4, variable=protocol_var).pack(side="left", padx=5)
+ttk.Radiobutton(protocol_frame, text="Auto", value=9, variable=protocol_var).pack(side="left", padx=5)
+
 # Control Buttons in a Single Row
 button_frame = ttk.Frame(app, padding=10)
 button_frame.pack(fill="x", padx=10, pady=5)
 
+
+ttk.Button(button_frame, text="Init NFC", style="danger.TButton", command=init_nfc).pack(side="left", fill="x", expand=True, padx=5)
 ttk.Button(button_frame, text="Read", style="primary.TButton", command=read_nfc).pack(side="left", fill="x", expand=True, padx=5)
 ttk.Button(button_frame, text="Write", style="success.TButton", command=write_nfc).pack(side="left", fill="x", expand=True, padx=5)
-ttk.Button(button_frame, text="Duplicate", style="danger.TButton", command=duplicate_nfc).pack(side="left", fill="x", expand=True, padx=5)
 
 # Scrollable Rooms Area
 rooms_frame = ttk.LabelFrame(app, text="Rooms", padding=10)
@@ -106,8 +119,12 @@ for room_name, room_data in config_data["rooms"].items():
     row = 0
     column = 0
     for item_name, item_content in room_data["items"].items():
-        button = ttk.Button(button_container, text=item_name, style="secondary.TButton", 
-                            command=lambda c=item_content: item_button_click(c))
+        button = ttk.Button(
+            button_container, 
+            text=item_name, 
+            style="secondary.TButton", 
+            command=lambda c=item_content, p=room_data["protocol"]: item_button_click(c, p)
+        )
         button.grid(row=row, column=column, padx=5, pady=5, sticky="ew")
         button_container.columnconfigure(column, weight=1)  # Ensure buttons stretch to fill space
         
