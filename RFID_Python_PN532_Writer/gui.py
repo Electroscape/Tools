@@ -10,21 +10,35 @@ def load_config():
             return json.load(file)
     except FileNotFoundError:
         raise("Configuration file not found.")
-        
 
+# Constants
+protocol_values = {
+    "Classic": 0,
+    "NTAG": 4,
+    "Auto": 9
+} 
+
+# Functions
+def display_message(msg):
+    read_area.config(state="normal")
+    read_area.insert("end", msg + "\n")
+    read_area.see("end")  # Scroll to the bottom
+    read_area.config(state="disabled")
+
+    
 # Callback functions
 def read_nfc():
-    read_area.config(state="normal")
-    read_area.delete("1.0", tk.END)
-    read_area.insert(tk.END, "Read NFC content here.")  # Replace with actual NFC read function
-    read_area.config(state="disabled")
+    display_message("Read NFC content here.\nCard Type: X\nValue:XX")  # Replace with actual NFC read function
 
 def write_nfc():
     content = write_text.get()
     protocol = protocol_var.get()
-    print(f"Writing to NFC: {content} with protocol {protocol}")  # Replace with actual NFC write function
+    protocol_name = [name for name, value in protocol_values.items() if value == protocol][0]
+    display_message(f"Writing to NFC: {content} with protocol {protocol_name}")
+    print(f"Writing to NFC: {content} with protocol {protocol_name}")  # Replace with actual NFC write function
 
 def init_nfc():
+    display_message("Init NFC...")
     print("Init NFC...")  # Replace with actual NFC init function
 
 def clear_write_area():
@@ -67,22 +81,25 @@ clear_button = ttk.Button(write_text_frame, text="Clear", style="warning.TButton
 clear_button.pack(side="left")
 
 # Protocol Radio Buttons
-protocol_var = tk.IntVar(value=9)  # Default to Auto
+protocol_var = tk.IntVar(value=protocol_values["Auto"])  # Default to Auto
 protocol_frame = ttk.Frame(write_frame)
 protocol_frame.pack(fill="x", padx=5, pady=5)
 
-ttk.Radiobutton(protocol_frame, text="Classic", value=0, variable=protocol_var).pack(side="left", padx=5)
-ttk.Radiobutton(protocol_frame, text="NTAG", value=4, variable=protocol_var).pack(side="left", padx=5)
-ttk.Radiobutton(protocol_frame, text="Auto", value=9, variable=protocol_var).pack(side="left", padx=5)
+for protocol_name, protocol_value in protocol_values.items():
+    ttk.Radiobutton(protocol_frame, text=protocol_name, value=protocol_value, variable=protocol_var).pack(side="left", padx=5)
 
 # Control Buttons in a Single Row
 button_frame = ttk.Frame(app, padding=10)
 button_frame.pack(fill="x", padx=10, pady=5)
 
+action_btns = {
+    "init": ttk.Button(button_frame, text="Init NFC", style="danger.TButton", command=init_nfc),
+    "read": ttk.Button(button_frame, text="Read", style="primary.TButton", command=read_nfc),
+    "write": ttk.Button(button_frame, text="Write", style="success.TButton", command=write_nfc)
+}
 
-ttk.Button(button_frame, text="Init NFC", style="danger.TButton", command=init_nfc).pack(side="left", fill="x", expand=True, padx=5)
-ttk.Button(button_frame, text="Read", style="primary.TButton", command=read_nfc).pack(side="left", fill="x", expand=True, padx=5)
-ttk.Button(button_frame, text="Write", style="success.TButton", command=write_nfc).pack(side="left", fill="x", expand=True, padx=5)
+for button in action_btns.values():
+    button.pack(side="left", fill="x", expand=True, padx=5)
 
 # Scrollable Rooms Area
 rooms_frame = ttk.LabelFrame(app, text="Rooms", padding=10)
@@ -133,5 +150,6 @@ for room_name, room_data in config_data["rooms"].items():
             column = 0
             row += 1
 
-# Run the application
-app.mainloop()
+if __name__ == "__main__":
+    # Run the application
+    app.mainloop()
