@@ -11,7 +11,8 @@ GPIO.cleanup()
 classic_read_block = 1
 ntag_read_block = 4
 
-def rfid_present(pn532) -> bytearray:
+
+def rfid_present(pn532: PN532_I2C) -> bytearray:
     """
     checks if the card is present inside the box
     @return: (bytearray) with uid or empty value.
@@ -26,7 +27,7 @@ def rfid_present(pn532) -> bytearray:
     return uid
 
 
-def authenticate(uid, pn532) -> bool:
+def authenticate(uid: bytearray, pn532: PN532_I2C) -> bool:
     key = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
     rc = False
     if pn532:
@@ -41,7 +42,7 @@ def authenticate(uid, pn532) -> bool:
     return rc
 
 
-def rfid_read(uid, pn532) -> str:
+def rfid_read(uid: bytearray, pn532: PN532_I2C) -> str:
     """
     Reads data written on the card
     """
@@ -71,6 +72,7 @@ def rfid_read(uid, pn532) -> str:
 
     return read_data.strip('\x00')
 
+
 def get_rfid_configurations(pn532 : PN532_I2C) -> str:
     try:
         ic, ver, rev, support = pn532.firmware_version
@@ -83,6 +85,7 @@ def get_rfid_configurations(pn532 : PN532_I2C) -> str:
         print(err)
         print("failed to init rfid! try again")
         return "failed to init rfid! try again"
+
 
 def init_rfid() -> PN532_I2C | None:
     # I2C connection:
@@ -97,57 +100,61 @@ def init_rfid() -> PN532_I2C | None:
         print("failed to init rfid! try again")
         return None
 
-class RFID:
-    def __init__(self, cards=None, **config):
-        if cards is None:
-            cards = [0]
-            
-        self.name = config.get("name", "rfid")
-        self.cards = cards
+
+def rfid_write(pn532: PN532_I2C, data: str, protocol: int=0) -> bool:
+    if not pn532:
+        print('RFID not initialized')
+        return False
+
+    data = bytearray(data.encode('utf-8'))
+
+    while len(data) < 16:
+        data.append(0)
+
+    if len(data) > 16:
+        print('data is too long and need to be truncated')
+        data = data[:16]
+
+    print('datalength is: ' + str(len(data)))
+    # since a string terminates with a 0 set it so...
+    if data[15] != 0:
+        data[15] = 0
+
+    print(data)
+
+    uid = wait_for_card(pn532)
+    try:
+        if protocol == 4:  # NTAG
+            data = data[:4]
+            rc = pn532.ntag2xx_write_block(ntag_read_block, data)
+        elif protocol == 0:  # Classic
+            auth = authenticate(uid, pn532)
+            sleep(0.5)
+            if not auth:
+                print('authentication failed, aborting process')
+                return False
+            rc = pn532.mifare_classic_write_block(classic_read_block, data)
+
+        if not rc:
+            print('writing failed... exiting')
+            return False
         
-        # Requirment: default value is last in the list 
-        self.data = {
-            "data": str(cards[-1])
-        }
-        self.pn532 = None
-        self.rfid_task = self.sio.start_background_task(self.init_rfid)
-        self.rfid_task = self.sio.start_background_task(self.check_loop)
+    except Exception as e:
+        print(e)
+        return False
 
-    def set_rfid_data(self, msg):
-        print(f"override data to: {msg}")
-        self.data["data"] = msg
+    print('return of write: ' + str(rc))
 
-    def get_data(self):
-        return self.data
+    return True
 
-    def check_loop(self):
-        while True:
-            sleep(0.05)
-            card_uid = rfid_present(self.pn532)
-            if card_uid:
-                print(f"Card found uid: {card_uid}")
 
-                card_read = rfid_read(card_uid, self.pn532)
-
-                # Remove prefix "P" <- POD related 
-                if card_read.startswith("P"):
-                    card_read = card_read[1:]
-
-                print(f"Data on card: {card_read}")
-                if card_read in self.cards:
-                    self.data["data"] = card_read
-                    print(f"chosen card: {card_read}")
-                else:
-                    print(f'Wrong data: {card_read}')
-
-                # wait here until card is removed
-                current_card = rfid_present(self.pn532)
-                if card_read != "x":
-                    while current_card and current_card == rfid_present(self.pn532):
-                        continue
-                
-                    # Return to default value
-                    self.data["data"] = str(self.cards[-1])
-                    print("card removed")
-                else:
-                    print(f"data is: {card_read} , repeat checking..")
+def wait_for_card(pn532: PN532_I2C) -> bytearray:
+    print('Waiting for RFID/NFC card...')
+    while True:
+        uid = pn532.read_passive_target(timeout=0.5)
+        print('.', end="")
+        # Try again if no card is available.
+        if uid is None:
+            continue
+        print('Found card with UID:', [hex(i) for i in uid])
+        return uid

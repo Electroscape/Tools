@@ -50,6 +50,10 @@ def init_nfc():
 def clear_write_area():
     write_text.delete(0, tk.END)
     protocol_var.set(9)  # Reset to Auto
+    clear_display() # Clear the read area
+
+def get_write_values():
+    return write_text.get(), protocol_var.get()
 
 def set_write_values(content, protocol):
     write_text.delete(0, tk.END)

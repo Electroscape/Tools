@@ -1,5 +1,5 @@
-from gui import app, action_btns, protocol_values, display_message, clear_display, set_write_values
-from rfid_core import init_rfid, get_rfid_configurations,  rfid_present, rfid_read, authenticate
+from gui import app, action_btns, protocol_values, display_message, clear_display, set_write_values, get_write_values
+from rfid_core import init_rfid, get_rfid_configurations,  rfid_present, rfid_read, authenticate, rfid_write
 from time import sleep
 
 # Global Variables
@@ -61,30 +61,59 @@ def gui_read_nfc() -> bool:
 
             set_write_values(card_read, protocol_values[protocol])
 
-            # wait here until card is removed
-            display_message("Please remove card, waiting for card removal...")
-            current_card = rfid_present(pn532)
-            if card_read != "x":
-                while current_card and current_card == rfid_present(pn532):
-                    continue
-            
-                # Return to default value
-                display_message("Card removed")
-                print("card removed")
-                button.config(text=button_txt, state="normal")
-                return True
-            else:
+            if card_read == "x":
                 print(f"Unless you wrote '{card_read}' , please try again")
                 display_message(f"Unless you wrote '{card_read}', please try again")
-                button.config(text=button_txt, state="normal")
-                return False
+                
+            button.config(text=button_txt, state="normal")
+            return True
 
 def gui_write_nfc():
-    content = app.write_text.get()
-    protocol = app.protocol_var.get()
-    protocol_name = [name for name, value in protocol_values.items() if value == protocol][0]
-    display_message(f"Writing to NFC: {content} with protocol {protocol_name}")
-    print(f"Writing to NFC: {content} with protocol {protocol_name}")  # Replace with actual NFC write function 
+    clear_display()
+    content, protocol = get_write_values()
+    if not pn532:
+        display_message("NFC not initialized, please initialize first.")
+        return False
+    elif not protocol < 9:
+        display_message("Cannot write to NFC with protocol 'Auto', please select a protocol")
+        display_message("Check card type via 'Read' and try again")
+        return False
+    elif not content:
+        display_message("Text field is empty, please enter text to write to the NFC card")
+        return False
+    
+    button = action_btns["write"]
+    button_txt = button.cget("text")
+    button.config(state="disabled", text="Writing...")
+    
+    display_message("Writing to NFC...")
+    display_message("Place card on the reader...")
+    while True:
+        sleep(0.05)
+        # Wait for card to be present
+        card_uid = rfid_present(pn532)
+
+        # Card detected
+        if card_uid:
+            display_message(f"Card detected, writing data...")
+            print(f"Card found uid: {card_uid}")
+            protocol_name = [name for name, value in protocol_values.items() if value == protocol][0]
+            print(f"Writing to card: {content} with protocol {protocol_name}")
+            display_message(f"Writing to NFC: '{content}' with protocol {protocol_name}")
+            
+            is_success = rfid_write(pn532, content, protocol)
+            if is_success:
+                display_message("Data written successfully")
+                print("Data written successfully")
+                app.after(1000, gui_read_nfc)
+            else:
+                display_message("Failed to write data")
+                print("Failed to write data")
+
+            break
+        
+    button.config(text=button_txt, state="normal")
+
 
 # Initialize Action Buttons
 action_btns["init"].config(command=gui_init_nfc)
