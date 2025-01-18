@@ -10,4 +10,4 @@ source venv/bin/activate
 sleep 1
 
 export DISPLAY=:"0.0" 
-python gui.py &
+python main.py &
