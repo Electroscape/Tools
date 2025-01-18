@@ -26,6 +26,11 @@ def display_message(msg):
     read_area.config(state="disabled")
     app.update()
 
+def clear_display():
+    read_area.config(state="normal")
+    read_area.delete("1.0", "end")
+    read_area.config(state="disabled")
+    app.update()
     
 # Callback functions
 def read_nfc():
@@ -46,7 +51,7 @@ def clear_write_area():
     write_text.delete(0, tk.END)
     protocol_var.set(9)  # Reset to Auto
 
-def item_button_click(content, protocol):
+def set_write_values(content, protocol):
     write_text.delete(0, tk.END)
     write_text.insert(0, content)
     protocol_var.set(protocol)
@@ -66,7 +71,7 @@ app.resizable(False, False)
 # Read Area
 read_frame = ttk.LabelFrame(app, text="Read Area", padding=10)
 read_frame.pack(fill="x", padx=10, pady=5)
-read_area = tk.Text(read_frame, height=5, wrap="word", state="disabled")
+read_area = tk.Text(read_frame, height=6, wrap="word", state="disabled")
 read_area.pack(fill="x", padx=5, pady=5)
 
 # Write Text Area with Clear Button and Protocol Selection
@@ -141,7 +146,7 @@ for room_name, room_data in config_data["rooms"].items():
             button_container, 
             text=item_name, 
             style="secondary.TButton", 
-            command=lambda c=item_content, p=room_data["protocol"]: item_button_click(c, p)
+            command=lambda c=item_content, p=room_data["protocol"]: set_write_values(c, p)
         )
         button.grid(row=row, column=column, padx=5, pady=5, sticky="ew")
         button_container.columnconfigure(column, weight=1)  # Ensure buttons stretch to fill space

@@ -69,16 +69,10 @@ def rfid_read(uid, pn532) -> str:
         pass
         # print(e)
 
-    return read_data
+    return read_data.strip('\x00')
 
-
-def init_rfid() -> str:
-    # I2C connection:
-    print("PN352 init loop")
+def get_rfid_configurations(pn532 : PN532_I2C) -> str:
     try:
-        i2c = busio.I2C(board.SCL, board.SDA)
-        sleep(1)
-        pn532 = PN532_I2C(i2c, debug=False)  # <= always breaks here
         ic, ver, rev, support = pn532.firmware_version
         print("Found PN532 with firmware version: {0}.{1}".format(ver, rev))
         sleep(0.5)
@@ -88,7 +82,20 @@ def init_rfid() -> str:
     except Exception as err:
         print(err)
         print("failed to init rfid! try again")
-        return ""
+        return "failed to init rfid! try again"
+
+def init_rfid() -> PN532_I2C | None:
+    # I2C connection:
+    print("PN352 init loop")
+    try:
+        i2c = busio.I2C(board.SCL, board.SDA)
+        sleep(1)
+        pn532 = PN532_I2C(i2c, debug=False)  # <= always breaks here
+        return pn532
+    except Exception as err:
+        print(err)
+        print("failed to init rfid! try again")
+        return None
 
 class RFID:
     def __init__(self, cards=None, **config):
