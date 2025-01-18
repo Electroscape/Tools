@@ -24,6 +24,7 @@ def display_message(msg):
     read_area.insert("end", msg + "\n")
     read_area.see("end")  # Scroll to the bottom
     read_area.config(state="disabled")
+    app.update()
 
     
 # Callback functions

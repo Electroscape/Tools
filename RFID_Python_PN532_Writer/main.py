@@ -1,19 +1,27 @@
 from gui import app, action_btns, display_message
 import rfid_core as nfc
+from time import sleep
 
-def init_nfc():
-    action_btns["init"].config(state="disabled")
-    count = 1
-    while count < 5:
-        display_message("Init NFC...\nTrial: " + str(count))
+def init_nfc(trials=5):
+    button = action_btns["init"]
+    button_txt = button.cget("text")
+    button.config(state="disabled", text="Initializing...")
+    count = 0
+    assert 20 >= trials >= 0, "Number of trials must be between 0 and 20"
+    while count < trials:
         count += 1
+        display_message("Init NFC...")
         msg = nfc.init_rfid()
         if msg:
             display_message(msg)
+            display_message("NFC Initialized Successfully")
             break
         else:
-            display_message(f"NFC Initialization Failed\nRetrying...")
-    action_btns["init"].config(state="enabled")
+            display_message(f"NFC Initialization Failed")
+            if count < trials:
+                display_message(f"Retrying in 1 seconds... ({count}/{trials})")
+                sleep(1)
+    button.config(text=button_txt, state="normal")
 
 
 def read_nfc():
@@ -31,4 +39,8 @@ action_btns["init"].config(command=init_nfc)
 action_btns["read"].config(command=read_nfc)
 action_btns["write"].config(command=write_nfc)
 
+# Schedule the function to Initialize NFC after the main loop starts
+app.after(1, init_nfc)
+
+# Run the app
 app.mainloop()
