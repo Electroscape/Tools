@@ -3,6 +3,62 @@ from tkinter import ttk
 import ttkbootstrap as tb
 import json
 
+
+
+# Global reference to the overlay so we can cancel it later
+_overlay_window = None
+
+def show_overlay(cancel_state, on_cancel=None):
+    global _overlay_window
+
+    if _overlay_window is not None:
+        return  # Overlay already active
+
+    cancel_state["cancelled_by_user"] = False  # Reset the flag
+
+    # Create overlay window
+    _overlay_window = tk.Toplevel(app)
+    _overlay_window.attributes("-topmost", True)
+    _overlay_window.attributes("-alpha", 0.3)  # Set transparency
+    _overlay_window.grab_set()
+    _overlay_window.overrideredirect(True)
+    _overlay_window.configure(bg='gray20')
+
+    def sync_overlay(event=None):
+        if _overlay_window:
+            _overlay_window.geometry(
+                f"{app.winfo_width()}x{app.winfo_height()}+{app.winfo_rootx()}+{app.winfo_rooty()}"
+            )
+
+    sync_overlay()
+    app.bind("<Configure>", sync_overlay)
+
+    # Frame to center the content
+    frame = ttk.Frame(_overlay_window, padding=30)
+    frame.place(relx=0.5, rely=0.5, anchor="center")
+
+    label = ttk.Label(frame, text="Please place card on reader", font=("Helvetica", 16))
+    label.pack(pady=(0, 10))
+
+    cancel_btn = ttk.Button(frame, text="Cancel", command=lambda: cancel_overlay(cancel_state, on_cancel))
+    cancel_btn.pack()
+
+    app.update()  # <-- Ensures the overlay renders before the loop starts
+
+
+def cancel_overlay(cancel_state, on_cancel=None):
+    global _overlay_window
+    cancel_state["cancelled_by_user"] = True  # Set the flag to exit the loop
+    
+    if _overlay_window is not None:
+        _overlay_window.grab_release()
+        _overlay_window.destroy()
+        _overlay_window = None
+
+        if on_cancel:
+            on_cancel()
+
+
 # Load configuration from cfg.json
 def load_config():
     try:
@@ -62,6 +118,11 @@ def set_write_values(content, protocol):
 
 def on_mousewheel(event):
     canvas.yview_scroll(-1 * int(event.delta / 120), "units")
+
+def set_btns_to_default(default_btns: dict):
+    for btn_name, btn_config in default_btns.items():
+        action_btns[btn_name].config(state="normal",
+            text=btn_config["text"], command=btn_config["command"])
 
 # Load configuration
 config_data = load_config()
