@@ -35,11 +35,29 @@ Start the script with python3 in the console of the rpi
 
 it will ask you what room shall be used, those are configured in cfg.json
 
-then you can either read write or duplicate.
+then you can either read or write.
 
 If, items are missing feel free to add them to the json 
 
 ## Troubleshooting 
 
-ModuleNotFoundError: No module named 'board'
-sudo python3 -m pip install --break-system-packages --force-reinstall adafruit-blinka 
+### ModuleNotFoundError: No module named 'board'
+
+`sudo python3 -m pip install --break-system-packages --force-reinstall adafruit-blinka`
+
+### locale.Error: unsupported locale setting
+
+- Check location setting with `locale`
+- Install german location `sudo locale-gen de_DE.UTF-8`
+- Run `sudo dpkg-reconfigure locales` and choose de_DE from the list using space
+- in `run.sh` add before python call:
+  ```Bash
+    # Set locale for German (Germany)
+    export LC_ALL=de_DE.UTF-8
+    export LANG=de_DE.UTF-8
+    export LANGUAGE=de_DE.UTF-8
+    ```
+
+### For RPi 5: gpio missing
+
+in requirements, install `rpi-lgpio` instead of `RPi.GPIO`
