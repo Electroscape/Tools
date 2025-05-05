@@ -1,9 +1,8 @@
 #!/bin/bash
 
 sudo apt update -y
-sudo apt install i2c-tools libnfc6 libnfc-bin libnfc-examples chromium-browser -y
-sudo apt-get install python3-dev python3-rpi.gpio picap -y
-sudo apt install chromium-browser feh unclutter xdotool -y
+sudo apt install i2c-tools libnfc6 libnfc-bin libnfc-examples -y
+sudo apt install python3-dev python3-rpi.gpio -y
 
 
 # shellcheck disable=SC2164

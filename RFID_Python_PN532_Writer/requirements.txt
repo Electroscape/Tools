@@ -1,3 +1,6 @@
+RPi.GPIO
+# for RPi 5
+# rpi-lgpio
 adafruit-blinka
 adafruit-circuitpython-pn532
 ttkbootstrap
